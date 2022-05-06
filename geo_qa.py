@@ -2,7 +2,8 @@ import requests
 import lxml.html
 
 PREFIX = "http://en.wikipedia.org"
-
+countries = []
+countriesNames = []
 
 def getAllCountryRefs(url):
     countryRefs = []
@@ -26,7 +27,7 @@ def getCountryPresident(countryURL):
 def getCountryPrimeMinister(countryURL):
     r = requests.get(countryURL)
     doc = lxml.html.fromstring(r.content)
-    primURL = doc.xpath("//table[contains(./@class,'infobox')]//tr[.//th//text()='Prime Minister']/td//a[1]/@href")
+    primURL = doc.xpath("(//table[contains(./@class,'infobox')]//tr[.//th//text()='Prime Minister']/td//a)[1]/@href")
     return primURL
 
 
@@ -40,7 +41,7 @@ def getCountryGovernment(countryURL):
 def getCountryCapital(countryURL):
     r = requests.get(countryURL)
     doc = lxml.html.fromstring(r.content)
-    primURL = doc.xpath("//table[contains(./@class,'infobox')]//tr[.//text()='Capital']/td//a[1]/@title")
+    primURL = doc.xpath("(//table[contains(./@class,'infobox')]//tr[.//text()='Capital']/td//a)[1]/@href")
     return primURL
 
 
@@ -71,10 +72,15 @@ def getPersonBirthday(personURL):
 def getPersonBirthPlace(personURL):
     r = requests.get(personURL)
     doc = lxml.html.fromstring(r.content)
-    primURL = doc.xpath("//table[contains(./@class,'infobox')]//tr[.//text()='Born']/td/text()[last()]")
-
-    primURL = doc.xpath("//table[contains(./@class,'infobox')]//tr[.//text()='Born']/td/text()[last()]")
-    return primURL
+    birthURLS = doc.xpath("//table[contains(./@class,'infobox')]//tr[.//text()='Born']/td//a")
+    for url in birthURLS:
+        if url in countries:
+            return [url]
+    birthURL = doc.xpath("//table[contains(./@class,'infobox')]//tr[.//text()='Born']/td/text()[last()]")
+    if birthURL in countriesNames: # need to actually init the countriesNames with the proper names
+        return birthURL
+    else:
+        return []
 
 
 def createOntology():
@@ -113,17 +119,20 @@ def testFunc(url):
     r = requests.get(url)
     country_html = lxml.html.fromstring(r.content)
     infobox = country_html.xpath("(//table[contains(./@class, 'infobox')])[1]")[0]
-    president = infobox.xpath(
-        "tbody/tr/th[./div/a[text()='President' and not(contains(text(),'Vice'))]]/following-sibling::td/a[1]/text()")
-    if len(president) == 0:
-        president = infobox.xpath(
-            "tbody/tr/th[./div/a[text()='President' and not(contains(text(),'Vice'))]]/following-sibling::td/span/a[1]/text()")
-    return president
+    prime_minister = infobox.xpath(
+        "tbody/tr/th[./div/a[text()='Prime Minister' and not(contains(text(),'Vice'))]]/following-sibling::td/a[1]/text()")
+    if len(prime_minister) == 0:
+        prime_minister = infobox.xpath(
+            "tbody/tr/th[./div/a[text()='Prime Minister' and not(contains(text(),'Vice'))]]/following-sibling::td/div//a[1]/text()")
+    if len(prime_minister) == 0:
+        prime_minister = infobox.xpath(
+            "tbody/tr/th[./div/a[contains(text(),'Prime Minister')]]/following-sibling::td/div/a[1]/text()")
+    return prime_minister
 
 
 if __name__ == '__main__':
-    # print(len(getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")))
-    # print(getCountryPresident("https://en.wikipedia.org/wiki/Russia"))
+    print(len(getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")))
+    print(getCountryPrimeMinister("https://en.wikipedia.org/wiki/Russia"))
     countries = getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")
     urls = []
     for country in countries:
@@ -133,10 +142,10 @@ if __name__ == '__main__':
     presidents = []
     testPresidents = []
     for url in urls:
-        presidents.append(getCountryPresident(url))
-        testPresidents.append(testFunc(url))
+        presidents.append(getCountryPopulation(url))
+        # testPresidents.append(testFunc(url))
 
     print(len([x for x in presidents if not len(x) == 0]))
-    print(len([x for x in testPresidents if not len(x) == 0]))
-    print([(presidents[i], testPresidents[i]) for i in range(len(presidents)) if presidents[i] != testPresidents[i]])
+    # print(len([x for x in testPresidents if not len(x) == 0]))
+    # print([(presidents[i], testPresidents[i]) for i in range(len(presidents)) if len(presidents[i]) != len(testPresidents[i])])
     print("temp")
