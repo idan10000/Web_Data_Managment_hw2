@@ -42,6 +42,9 @@ def getCountryCapital(countryURL):
     r = requests.get(countryURL)
     doc = lxml.html.fromstring(r.content)
     primURL = doc.xpath("(//table[contains(./@class,'infobox')]//tr[.//text()='Capital']/td//a)[1]/@href")
+    if len(primURL) > 0:
+        if 'wiki' not in primURL[0]:
+            return []
     return primURL
 
 
@@ -119,15 +122,21 @@ def testFunc(url):
     r = requests.get(url)
     country_html = lxml.html.fromstring(r.content)
     infobox = country_html.xpath("(//table[contains(./@class, 'infobox')])[1]")[0]
-    prime_minister = infobox.xpath(
-        "tbody/tr/th[./div/a[text()='Prime Minister' and not(contains(text(),'Vice'))]]/following-sibling::td/a[1]/text()")
-    if len(prime_minister) == 0:
-        prime_minister = infobox.xpath(
-            "tbody/tr/th[./div/a[text()='Prime Minister' and not(contains(text(),'Vice'))]]/following-sibling::td/div//a[1]/text()")
-    if len(prime_minister) == 0:
-        prime_minister = infobox.xpath(
-            "tbody/tr/th[./div/a[contains(text(),'Prime Minister')]]/following-sibling::td/div/a[1]/text()")
-    return prime_minister
+    capital = infobox.xpath("tbody/tr[./th[text()='Capital']]/td/a/@href")
+    if len(capital) > 0:
+        capital = capital[0].rsplit("/", 1)[1].replace('_', ' ')
+    if len(capital) == 0:
+        capital = infobox.xpath("tbody/tr[./th[text()='Capital']]/td/text()")
+    if len(capital) == 0:
+        capital = infobox.xpath("tbody/tr[./th[text()='Capital']]/td/div/ul/li/a/text()")
+    # if len(capital)>0:
+    #   capital = infobox.xpath("tbody/tr[./th[text()='Capital']]/td/div/ul/li[2]/a/text()")
+    if len(capital) == 0:
+        capital = infobox.xpath("tbody/tr[./th[text()='Capital']]/td/text()")
+    if len(capital) > 0:
+        if 'none' in str(capital[0]).lower():
+            capital = []
+    return capital
 
 
 if __name__ == '__main__':
@@ -142,10 +151,10 @@ if __name__ == '__main__':
     presidents = []
     testPresidents = []
     for url in urls:
-        presidents.append(getCountryPopulation(url))
-        # testPresidents.append(testFunc(url))
+        presidents.append(getCountryCapital(url))
+        testPresidents.append(testFunc(url))
 
     print(len([x for x in presidents if not len(x) == 0]))
-    # print(len([x for x in testPresidents if not len(x) == 0]))
-    # print([(presidents[i], testPresidents[i]) for i in range(len(presidents)) if len(presidents[i]) != len(testPresidents[i])])
+    print(len([x for x in testPresidents if not len(x) == 0]))
+    print([(presidents[i], testPresidents[i]) for i in range(len(presidents)) if len(presidents[i]) != len(testPresidents[i])])
     print("temp")
