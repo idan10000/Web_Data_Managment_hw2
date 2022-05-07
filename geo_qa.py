@@ -37,6 +37,12 @@ def getCountryGovernment(countryURL):
     govForms = doc.xpath("//table[contains(./@class,'infobox')]//tr[.//text()='Government']/td//a/@title")
     return govForms
 
+def getCountryDrivingSide(countryURL):
+    r = requests.get(countryURL)
+    doc = lxml.html.fromstring(r.content)
+    drivingSide = doc.xpath("(//table[contains(./@class,'infobox')]//tr[.//th//text()='Driving side']/td//text())[1]")
+    return drivingSide
+
 
 def getCountryCapital(countryURL):
     r = requests.get(countryURL)
@@ -141,7 +147,7 @@ def testFunc(url):
 
 if __name__ == '__main__':
     print(len(getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")))
-    print(getCountryPrimeMinister("https://en.wikipedia.org/wiki/Russia"))
+    print(getCountryDrivingSide("https://en.wikipedia.org/wiki/Russia"))
     countries = getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")
     urls = []
     for country in countries:
@@ -151,10 +157,10 @@ if __name__ == '__main__':
     presidents = []
     testPresidents = []
     for url in urls:
-        presidents.append(getCountryCapital(url))
-        testPresidents.append(testFunc(url))
+        presidents.append(getCountryDrivingSide(url))
+        # testPresidents.append(testFunc(url))
 
     print(len([x for x in presidents if not len(x) == 0]))
-    print(len([x for x in testPresidents if not len(x) == 0]))
-    print([(presidents[i], testPresidents[i]) for i in range(len(presidents)) if len(presidents[i]) != len(testPresidents[i])])
+    # print(len([x for x in testPresidents if not len(x) == 0]))
+    # print([(presidents[i], testPresidents[i]) for i in range(len(presidents)) if len(presidents[i]) != len(testPresidents[i])])
     print("temp")
