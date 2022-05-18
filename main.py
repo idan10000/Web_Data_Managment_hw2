@@ -176,7 +176,7 @@ def createOntology():
             president_name.replace(" ", "_")
             presidents.add(president_name)
             presidentOntology = prepareStrToOntology(president_name)
-            g.add((presidentOntology, prime_minister_of_country, countryOntology))
+            g.add((presidentOntology, president_of_country, countryOntology))
             bDay = getPersonBirthday(PREFIX + "/wiki" + president_name)
             if len(bDay) > 0:
                 bDay1 = bDay[0]
