@@ -159,13 +159,15 @@ def createOntology():
             prime_ministerOntology = prepareStrToOntology(prime_minister_name)
             g.add((prime_ministerOntology, prime_minister_of_country, countryOntology))
             bDay = getPersonBirthday(PREFIX +"/wiki"+prime_minister_name)
-            bDay1 = bDay[0]
-            bPlace = getPersonBirthPlace(PREFIX +"/wiki"+prime_minister_name)
-            bPlace1 = bPlace[0]
-            bdayOntolgy = prepareStrToOntology(bDay1)
-            g.add((bdayOntolgy, birth_day_of_person, countryOntology))
-            bPlaceOntology = prepareStrToOntology(bPlace1)
-            g.add((bPlaceOntology, birth_place_of_person, countryOntology))
+            if len(bDay) > 0:
+                bDay1 = bDay[0]
+                bdayOntolgy = prepareStrToOntology(bDay1)
+                g.add((bdayOntolgy, birth_day_of_person, prime_minister_name))
+            bPlace = getPersonBirthPlace(PREFIX + "/wiki" + prime_minister_name)
+            if len(bPlace) > 0:
+                bPlace1 = bPlace[0]
+                bPlaceOntology = prepareStrToOntology(bPlace1)
+                g.add((bPlaceOntology, birth_place_of_person, prime_minister_name ))
 
 
         if len(president) > 0:
@@ -176,13 +178,15 @@ def createOntology():
             presidentOntology = prepareStrToOntology(president_name)
             g.add((presidentOntology, prime_minister_of_country, countryOntology))
             bDay = getPersonBirthday(PREFIX + "/wiki" + president_name)
-            bDay1 = bDay[0]
+            if len(bDay) > 0:
+                bDay1 = bDay[0]
+                bdayOntolgy = prepareStrToOntology(bDay1)
+                g.add((bdayOntolgy, birth_day_of_person, president_name))
             bPlace = getPersonBirthPlace(PREFIX + "/wiki" + president_name)
-            bPlace1 = bPlace[0]
-            bdayOntolgy = prepareStrToOntology(bDay1)
-            g.add((bdayOntolgy, birth_day_of_person, countryOntology))
-            bPlaceOntology = prepareStrToOntology(bPlace1)
-            g.add((bPlaceOntology, birth_place_of_person, countryOntology))
+            if len(bPlace) > 0:
+                bPlace1 = bPlace[0]
+                bPlaceOntology = prepareStrToOntology(bPlace1)
+                g.add((bPlaceOntology, birth_place_of_person, president_name))
 
         populationString = population[0]
         populationAntology = prepareStrToOntology(populationString)
