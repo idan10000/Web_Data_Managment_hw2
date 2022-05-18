@@ -24,7 +24,6 @@ birth_day_of_person = rdflib.URIRef(ontology_Prefix + "birth_day_of_person")
 birth_place_of_person = rdflib.URIRef(ontology_Prefix + "birth_place_of_person")
 
 
-
 def getAllCountryRefs(url):
     countryRefs = []
     r = requests.get(url)
@@ -57,6 +56,7 @@ def getCountryGovernment(countryURL):
     govForms = doc.xpath("//table[contains(./@class,'infobox')]//tr[.//text()='Government']/td//a/@title")
     return govForms
 
+
 def getCountryDrivingSide(countryURL):
     r = requests.get(countryURL)
     doc = lxml.html.fromstring(r.content)
@@ -88,7 +88,7 @@ def getCountryArea(countryURL):
     area = doc.xpath(
         "(//table[contains(./@class,'infobox')]//tr[contains(.//text(),'Area')]/following-sibling::tr[1]/td//text()[.!='\n'])[1]")
     strrinArea = area[0]
-   # area = re.split("–-/", strrinArea)
+    # area = re.split("–-/", strrinArea)
     result = ""
     for c in strrinArea:
         if c.isdigit() or c == ",":
@@ -96,7 +96,8 @@ def getCountryArea(countryURL):
         else:
             break
 
-    return [result +" km squared"]
+    return [result + " km squared"]
+
 
 def getPersonBirthday(personURL):
     r = requests.get(personURL)
@@ -113,7 +114,7 @@ def getPersonBirthPlace(personURL):
         if url in countries:
             return [url]
     birthURL = doc.xpath("//table[contains(./@class,'infobox')]//tr[.//text()='Born']/td/text()[last()]")
-    if birthURL in countriesNames: # need to actually init the countriesNames with the proper names
+    if birthURL in countriesNames:  # need to actually init the countriesNames with the proper names
         return birthURL
     else:
         return []
@@ -135,7 +136,7 @@ def prepareStrToOntology(name):
         name = name[6:]
     name = unquote(name)
     name = name.replace(" ", "_")
-    name = name.replace('"','')
+    name = name.replace('"', '')
     name = ontology_Prefix + name
     name = unquote(name)
     i = name.find('(')
@@ -149,6 +150,7 @@ def prepareStrToOntology(name):
 def createOntology():
     allCountries = getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")
     for country1 in allCountries:
+        # for country1 in ['/wiki/Israel']:
         prime_minister, population, capital, area, gov, president = getAlldataByCountry(country1)
         countryOntology = prepareStrToOntology(country1)
         if len(prime_minister) > 0:
@@ -158,7 +160,7 @@ def createOntology():
             primeMinisters.add(prime_minister_name)
             prime_ministerOntology = prepareStrToOntology(prime_minister_name)
             g.add((prime_ministerOntology, prime_minister_of_country, countryOntology))
-            bDay = getPersonBirthday(PREFIX +"/wiki"+prime_minister_name)
+            bDay = getPersonBirthday(PREFIX + "/wiki" + prime_minister_name)
             if len(bDay) > 0:
                 bDay1 = bDay[0]
                 bdayOntolgy = prepareStrToOntology(bDay1)
@@ -167,8 +169,7 @@ def createOntology():
             if len(bPlace) > 0:
                 bPlace1 = bPlace[0]
                 bPlaceOntology = prepareStrToOntology(bPlace1)
-                g.add((bPlaceOntology, birth_place_of_person, prime_minister_name ))
-
+                g.add((bPlaceOntology, birth_place_of_person, prime_minister_name))
 
         if len(president) > 0:
             president_name = president[0]
@@ -202,49 +203,52 @@ def createOntology():
             govOntology = prepareStrToOntology(formOfGov)
             g.add((govOntology, government_of_country, countryOntology))
 
+    g.serialize("ontology.nt", format="nt")
 
 
+def queryGraph(q):
+    res = list(g.query(q))
+    if len(res) == 0:
+        return None
+    for item in res:
+        print(item)
 
-        g.serialize("ontology.nt", format="nt")
 
-#question to sparql
+# question to sparql
 
 def whoIsQuestion(question):
     if question.find("president") != -1:
-        headOfCountry = "president_of_country"
-        country = question[24:-1]
-        """
-        q = "select ?x where "\
-                "{ ?x <http://example.org/" + headOfCountry + "> ?x ."\
-            " ?x <http://example.org/" + country + ">?x }"
-            """
-        return "select ?a where {<http://example.org/" + headOfCountry + "><http://example.org/" + country + "> ?a.}"
-
-        return q
+        country = question.split()[-1]
+        return "select * where {?a <http://example.org/president_of_country> <http://example.org/" + country + ">}"
 
     elif question.find("prime minister") != -1:
-        headOfCountry = "prime_minister_of_country"
-        country = question[29:-1]
-        return "select * where {<http://example.org/" + headOfCountry + "> <http://example.org/" + country + "> ?a.}"
+        country = question.split()[-1]
+        q = "select * where {?a <http://example.org/prime_minister_of_country> <http://example.org/" + country + ">}"
+        res = queryGraph(q)
 
     else:
-        name = question[7:-1]
+        name = question[7:].replace(" ", "_")
+        q = "select * where " \
+            "{<http://example.org/" + name + "> <http://example.org/president_of_country> ?x}"
+        res = queryGraph(q)
+        if res == None:
+            q = "select * where " \
+                "{<http://example.org/" + name + "> <http://example.org/prime_minister_of_country> ?x}"
+            res = queryGraph(q)
+
 
 
 def whatIsQuestion(question):
+    country = question.split()[-1]
     if question.find("population of") != -1:
-        country = question[26:-1]
         subject = "population_of_country"
     elif question.find("area of") != -1:
-        country = question[20:-1]
         subject = "area_of_country"
     elif question.find("form of government") != -1:
-        country = question[34:-1]
         subject = "government_of_country"
     elif question.find("is the capital of") != -1:
-        country = question[23:-1]
         subject = "capital_of_country"
-    return "select * where  {<http://example.org/" + subject + "> <http://example.org/" + country + "> ?x.}"
+    return "select * where  {?x<http://example.org/" + subject + "> <http://example.org/" + country + ">}"
 
 
 def whenQuestion(question):
@@ -253,7 +257,6 @@ def whenQuestion(question):
 
 
 def questionToSparql(question):
-
     # who is question
     if question.find("Who is") != -1:
         return whoIsQuestion(question)
@@ -262,55 +265,6 @@ def questionToSparql(question):
         return whatIsQuestion(question)
     if question.find("When") != -1:
         return whenQuestion(question)
-
-
-# //*[@id="mw-content-text"]/div[1]/table[1]/tbody/tr[32]/td/a[3]
-# //*[@id="mw-content-text"]/div[1]/table[2]/tbody/tr[45]/td/text()[3]
-#
-# def crawl(url, visited):
-#     urls = []
-#     r = requests.get(url)
-#     doc = lxml.html.fromstring(r.content)
-#     print(url)
-#
-#     hrefs = doc.xpath("//table/tbody/tr/td[1]/span//a/@href")
-#     hrefs = hrefs[:MAX_LINKS_PER_PAGE]
-#     for t in hrefs:
-#         if t in visited:
-#             continue
-#
-#         print(f"---- {t}")
-#         if len(visited) < MAX_PAGES:
-#             urls.append(f"{PREFIX}{t}")
-#             visited.add(t)
-#
-#     for next_url in urls:
-#         crawl(next_url, visited)
-
-
-# def main():
-#     visited = set()
-#     crawl("", visited)
-
-def testFunc(url):
-    r = requests.get(url)
-    country_html = lxml.html.fromstring(r.content)
-    infobox = country_html.xpath("(//table[contains(./@class, 'infobox')])[1]")[0]
-    capital = infobox.xpath("tbody/tr[./th[text()='Capital']]/td/a/@href")
-    if len(capital) > 0:
-        capital = capital[0].rsplit("/", 1)[1].replace('_', ' ')
-    if len(capital) == 0:
-        capital = infobox.xpath("tbody/tr[./th[text()='Capital']]/td/text()")
-    if len(capital) == 0:
-        capital = infobox.xpath("tbody/tr[./th[text()='Capital']]/td/div/ul/li/a/text()")
-    # if len(capital)>0:
-    #   capital = infobox.xpath("tbody/tr[./th[text()='Capital']]/td/div/ul/li[2]/a/text()")
-    if len(capital) == 0:
-        capital = infobox.xpath("tbody/tr[./th[text()='Capital']]/td/text()")
-    if len(capital) > 0:
-        if 'none' in str(capital[0]).lower():
-            capital = []
-    return capital
 
 
 if __name__ == '__main11__':
@@ -333,18 +287,24 @@ if __name__ == '__main11__':
     # print([(presidents[i], testPresidents[i]) for i in range(len(presidents)) if len(presidents[i]) != len(testPresidents[i])])
     print("temp")
 
+# s = (questionToSparql("What is the population of Israel?"))
+# print(getCountryArea(PREFIX+"/wiki/Austria"))
 
-
-s = (questionToSparql("Who is the prime minister of Israel?"))
-#print(getCountryPrimeMinister(PREFIX+"/wiki/The_Bahamas"))
-print(s)
-
+# print(s)
+"""""
 g = rdflib.Graph()
-g.parse("ontology.nt", format="nt")
+g.parse("graph.nt", format="nt")
 query_list_result = g.query(s)
 print(list(query_list_result))
-print(getPersonBirthday(PREFIX+"/wiki/Joe_Biden" ))
-#print(getCountryArea(PREFIX+"/wiki/China"))
-#print(prepareStrToOntology(PREFIX+"/wiki/China"))
-createOntology()
-print(presidents)
+"""""
+# print(getCountryArea(PREFIX+"/wiki/China"))
+# createOntology()
+
+# q = "select ?x where " \
+#     "{ ?x <http://example.org/prime_minister_of_country>  <http://example.org/India> " \
+#     "}"
+# x = g1.query(q)
+# print(list(x))
+g.parse("ontology.nt", format="nt")
+q = questionToSparql("Who is Joe Biden")
+print(list(g.query(q)))
