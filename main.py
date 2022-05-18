@@ -113,9 +113,12 @@ def getPersonBirthPlace(personURL):
     for url in birthURLS:
         if url in countries:
             return [url]
-    birthURL = doc.xpath("//table[contains(./@class,'infobox')]//tr[.//text()='Born']/td/text()[last()]")
-    if birthURL in countriesNames:  # need to actually init the countriesNames with the proper names
-        return birthURL
+    birthString = doc.xpath("//table[contains(./@class,'infobox')]//tr[.//text()='Born']/td/text()[last()]")
+    if len(birthString) == 0:
+        return []
+    birthPlace = re.sub(r'[^a-zA-Z]','',birthString[0])
+    if birthPlace in countriesNames:  # need to actually init the countriesNames with the proper names
+        return [f"/wiki/{birthPlace}"]
     else:
         return []
 
@@ -150,7 +153,10 @@ def prepareStrToOntology(name):
 def createOntology():
     allCountries = getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")
     for country1 in allCountries:
-        # for country1 in ['/wiki/Israel']:
+        countriesNames.append(country1[6:])
+
+    for country1 in allCountries:
+    # for country1 in ['/wiki/Israel']:
         prime_minister, population, capital, area, gov, president = getAlldataByCountry(country1)
         countryOntology = prepareStrToOntology(country1)
         if len(prime_minister) > 0:
@@ -160,16 +166,16 @@ def createOntology():
             primeMinisters.add(prime_minister_name)
             prime_ministerOntology = prepareStrToOntology(prime_minister_name)
             g.add((prime_ministerOntology, prime_minister_of_country, countryOntology))
-            bDay = getPersonBirthday(PREFIX + "/wiki" + prime_minister_name)
+            bDay = getPersonBirthday(PREFIX + "/wiki/" + prime_minister_name)
             if len(bDay) > 0:
                 bDay1 = bDay[0]
                 bdayOntolgy = prepareStrToOntology(bDay1)
-                g.add((bdayOntolgy, birth_day_of_person, prime_minister_name))
-            bPlace = getPersonBirthPlace(PREFIX + "/wiki" + prime_minister_name)
+                g.add((bdayOntolgy, birth_day_of_person, prime_ministerOntology))
+            bPlace = getPersonBirthPlace(PREFIX + "/wiki/" + prime_minister_name)
             if len(bPlace) > 0:
                 bPlace1 = bPlace[0]
                 bPlaceOntology = prepareStrToOntology(bPlace1)
-                g.add((bPlaceOntology, birth_place_of_person, prime_minister_name))
+                g.add((bPlaceOntology, birth_place_of_person, prime_ministerOntology))
 
         if len(president) > 0:
             president_name = president[0]
@@ -178,16 +184,16 @@ def createOntology():
             presidents.add(president_name)
             presidentOntology = prepareStrToOntology(president_name)
             g.add((presidentOntology, president_of_country, countryOntology))
-            bDay = getPersonBirthday(PREFIX + "/wiki" + president_name)
+            bDay = getPersonBirthday(PREFIX + "/wiki/" + president_name)
             if len(bDay) > 0:
                 bDay1 = bDay[0]
                 bdayOntolgy = prepareStrToOntology(bDay1)
-                g.add((bdayOntolgy, birth_day_of_person, president_name))
-            bPlace = getPersonBirthPlace(PREFIX + "/wiki" + president_name)
+                g.add((bdayOntolgy, birth_day_of_person, presidentOntology))
+            bPlace = getPersonBirthPlace(PREFIX + "/wiki/" + president_name)
             if len(bPlace) > 0:
                 bPlace1 = bPlace[0]
                 bPlaceOntology = prepareStrToOntology(bPlace1)
-                g.add((bPlaceOntology, birth_place_of_person, president_name))
+                g.add((bPlaceOntology, birth_place_of_person, presidentOntology))
 
         populationString = population[0]
         populationAntology = prepareStrToOntology(populationString)
@@ -256,14 +262,39 @@ def whatIsQuestion(question):
     elif question.find("is the capital of") != -1:
         country = question[23:-1].replace(" ", "_")
         subject = "capital_of_country"
-    q = "select * where  {?x<http://example.org/" + subject + "> <http://example.org/" + country + ">}"
+    q = "select * where  {?x <http://example.org/" + subject + "> <http://example.org/" + country + ">}"
     res = queryGraph(q)
 
 
 
 def whenQuestion(question):
     if question.find("president") != -1:
-        pass
+        country = question[26:-6]
+        q = "select ?y where {" \
+            "?x <http://example.org/president_of_country> <http://example.org/" + country + "> ." \
+             "?y <http://example.org/birth_day_of_person> ?x}"
+        res = queryGraph(q)
+    else:
+        country = question[31:-6]
+        q = "select ?y where {" \
+            "?x <http://example.org/prime_minister_of_country> <http://example.org/" + country + "> ." \
+             "?y <http://example.org/birth_day_of_person> ?x}"
+        res = queryGraph(q)
+
+
+def whereQuestion(question):
+    if question.find("president") != -1:
+        country = question[27:-6]
+        q = "select ?y where {" \
+            "?x <http://example.org/president_of_country> <http://example.org/" + country + "> ." \
+             "?y <http://example.org/birth_place_of_person> ?x}"
+        res = queryGraph(q)
+    else:
+        country = question[32:-6]
+        q = "select ?y where {" \
+            "?x <http://example.org/prime_minister_of_country> <http://example.org/" + country + "> ." \
+             "?y <http://example.org/birth_place_of_person> ?x}"
+        res = queryGraph(q)
 
 
 def questionToSparql(question):
@@ -274,6 +305,8 @@ def questionToSparql(question):
     if question.find("What is") != -1:
         return whatIsQuestion(question)
     if question.find("When") != -1:
+        return whenQuestion(question)
+    if question.find("Where") != -1:
         return whenQuestion(question)
 
 
@@ -308,7 +341,7 @@ query_list_result = g.query(s)
 print(list(query_list_result))
 """""
 # print(getCountryArea(PREFIX+"/wiki/China"))
-# createOntology()
+createOntology()
 
 # q = "select ?x where " \
 #     "{ ?x <http://example.org/prime_minister_of_country>  <http://example.org/India> " \
