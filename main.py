@@ -96,7 +96,7 @@ def getCountryArea(countryURL):
         else:
             break
 
-    return result +" km squared"
+    return [result +" km squared"]
 
 def getPersonBirthday(personURL):
     r = requests.get(personURL)
@@ -159,13 +159,13 @@ def createOntology():
             prime_ministerOntology = prepareStrToOntology(prime_minister_name)
             g.add((prime_ministerOntology, prime_minister_of_country, countryOntology))
             bDay = getPersonBirthday(PREFIX +"/wiki"+prime_minister_name)
+            bDay1 = bDay[0]
             bPlace = getPersonBirthPlace(PREFIX +"/wiki"+prime_minister_name)
-            for bDay1 in bDay:
-                bdayOntolgy = prepareStrToOntology(bDay1)
-                g.add((bdayOntolgy, birth_day_of_person, countryOntology))
-            for bPlace1 in bPlace:
-                bPlaceOntology = prepareStrToOntology(bPlace1)
-                g.add((bPlaceOntology, birth_place_of_person, countryOntology))
+            bPlace1 = bPlace[0]
+            bdayOntolgy = prepareStrToOntology(bDay1)
+            g.add((bdayOntolgy, birth_day_of_person, countryOntology))
+            bPlaceOntology = prepareStrToOntology(bPlace1)
+            g.add((bPlaceOntology, birth_place_of_person, countryOntology))
 
 
         if len(president) > 0:
@@ -175,6 +175,15 @@ def createOntology():
             presidents.add(president_name)
             presidentOntology = prepareStrToOntology(president_name)
             g.add((presidentOntology, prime_minister_of_country, countryOntology))
+            bDay = getPersonBirthday(PREFIX + "/wiki" + president_name)
+            bDay1 = bDay[0]
+            bPlace = getPersonBirthPlace(PREFIX + "/wiki" + president_name)
+            bPlace1 = bPlace[0]
+            bdayOntolgy = prepareStrToOntology(bDay1)
+            g.add((bdayOntolgy, birth_day_of_person, countryOntology))
+            bPlaceOntology = prepareStrToOntology(bPlace1)
+            g.add((bPlaceOntology, birth_place_of_person, countryOntology))
+
         populationString = population[0]
         populationAntology = prepareStrToOntology(populationString)
         g.add((populationAntology, population_of_country, countryOntology))
@@ -189,6 +198,9 @@ def createOntology():
             govOntology = prepareStrToOntology(formOfGov)
             g.add((govOntology, government_of_country, countryOntology))
 
+
+
+
         g.serialize("ontology.nt", format="nt")
 
 #question to sparql
@@ -202,12 +214,12 @@ def whoIsQuestion(question):
                 "{ ?x <http://example.org/" + headOfCountry + "> ?x ."\
             " ?x <http://example.org/" + country + ">?x }"
             """
-        return "select * where {<http://example.org/" + headOfCountry + "> <http://example.org/" + country + "> ?a.}"
+        return "select ?a where {<http://example.org/" + headOfCountry + "><http://example.org/" + country + "> ?a.}"
 
         return q
 
     elif question.find("prime minister") != -1:
-        headOfCountry = "prime_minister"
+        headOfCountry = "prime_minister_of_country"
         country = question[29:-1]
         return "select * where {<http://example.org/" + headOfCountry + "> <http://example.org/" + country + "> ?a.}"
 
@@ -237,6 +249,7 @@ def whenQuestion(question):
 
 
 def questionToSparql(question):
+
     # who is question
     if question.find("Who is") != -1:
         return whoIsQuestion(question)
@@ -316,15 +329,18 @@ if __name__ == '__main11__':
     # print([(presidents[i], testPresidents[i]) for i in range(len(presidents)) if len(presidents[i]) != len(testPresidents[i])])
     print("temp")
 
-#s = (questionToSparql("What is the population of Israel?"))
-#print(getCountryArea(PREFIX+"/wiki/Austria"))
 
-#print(s)
-"""""
+
+s = (questionToSparql("Who is the prime minister of Israel?"))
+#print(getCountryPrimeMinister(PREFIX+"/wiki/The_Bahamas"))
+print(s)
+
 g = rdflib.Graph()
-g.parse("graph.nt", format="nt")
+g.parse("ontology.nt", format="nt")
 query_list_result = g.query(s)
 print(list(query_list_result))
-"""""
-print(getCountryArea(PREFIX+"/wiki/China"))
-#createOntology()
+print(getPersonBirthday(PREFIX+"/wiki/Joe_Biden" ))
+#print(getCountryArea(PREFIX+"/wiki/China"))
+#print(prepareStrToOntology(PREFIX+"/wiki/China"))
+createOntology()
+print(presidents)
