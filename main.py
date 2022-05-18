@@ -220,17 +220,17 @@ def queryGraph(q):
 
 def whoIsQuestion(question):
     if question.find("president") != -1:
-        country = question.split()[-1]
+        country = question[24:-1].replace(" ", "_")
         q = "select * where {?a <http://example.org/president_of_country> <http://example.org/" + country + ">}"
         res = queryGraph(q)
 
     elif question.find("prime minister") != -1:
-        country = question.split()[-1]
+        country = question[29:-1].replace(" ", "_")
         q = "select * where {?a <http://example.org/prime_minister_of_country> <http://example.org/" + country + ">}"
         res = queryGraph(q)
 
     else:
-        name = question[7:].replace(" ", "_")
+        name = question[7:-1].replace(" ", "_")
         q = "select * where " \
             "{<http://example.org/" + name + "> <http://example.org/president_of_country> ?x}"
         res = queryGraph(q)
@@ -244,14 +244,17 @@ def whoIsQuestion(question):
 
 
 def whatIsQuestion(question):
-    country = question.split()[-1]
     if question.find("population of") != -1:
+        country = question[26:-1].replace(" ", "_")
         subject = "population_of_country"
     elif question.find("area of") != -1:
+        country = question[20:-1].replace(" ", "_")
         subject = "area_of_country"
     elif question.find("form of government") != -1:
+        country = question[34:-1].replace(" ", "_")
         subject = "government_of_country"
     elif question.find("is the capital of") != -1:
+        country = question[23:-1].replace(" ", "_")
         subject = "capital_of_country"
     q = "select * where  {?x<http://example.org/" + subject + "> <http://example.org/" + country + ">}"
     res = queryGraph(q)
@@ -313,5 +316,5 @@ print(list(query_list_result))
 # x = g1.query(q)
 # print(list(x))
 g.parse("ontology.nt", format="nt")
-q = questionToSparql("Who is Joe Biden")
+q = questionToSparql("Who is Joe Biden?")
 print(q)
