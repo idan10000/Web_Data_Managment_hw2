@@ -209,9 +209,11 @@ def createOntology():
 def queryGraph(q):
     res = list(g.query(q))
     if len(res) == 0:
-        return None
+        return []
+    output = []
     for item in res:
-        print(item)
+        output.append(str(item[0])[19:].replace("_"," "))
+    return output
 
 
 # question to sparql
@@ -231,7 +233,7 @@ def whoIsQuestion(question):
         q = "select * where " \
             "{<http://example.org/" + name + "> <http://example.org/president_of_country> ?x}"
         res = queryGraph(q)
-        if res == None:
+        if len(res) == 0:
             q = "select * where " \
                 "{<http://example.org/" + name + "> <http://example.org/prime_minister_of_country> ?x}"
             res = queryGraph(q)
