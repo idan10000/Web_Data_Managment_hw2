@@ -221,7 +221,8 @@ def queryGraph(q):
 def whoIsQuestion(question):
     if question.find("president") != -1:
         country = question.split()[-1]
-        return "select * where {?a <http://example.org/president_of_country> <http://example.org/" + country + ">}"
+        q = "select * where {?a <http://example.org/president_of_country> <http://example.org/" + country + ">}"
+        res = queryGraph(q)
 
     elif question.find("prime minister") != -1:
         country = question.split()[-1]
@@ -240,6 +241,8 @@ def whoIsQuestion(question):
 
 
 
+
+
 def whatIsQuestion(question):
     country = question.split()[-1]
     if question.find("population of") != -1:
@@ -250,7 +253,9 @@ def whatIsQuestion(question):
         subject = "government_of_country"
     elif question.find("is the capital of") != -1:
         subject = "capital_of_country"
-    return "select * where  {?x<http://example.org/" + subject + "> <http://example.org/" + country + ">}"
+    q = "select * where  {?x<http://example.org/" + subject + "> <http://example.org/" + country + ">}"
+    res = queryGraph(q)
+
 
 
 def whenQuestion(question):
@@ -309,4 +314,4 @@ print(list(query_list_result))
 # print(list(x))
 g.parse("ontology.nt", format="nt")
 q = questionToSparql("Who is Joe Biden")
-print(list(g.query(q)))
+print(q)
