@@ -1,3 +1,5 @@
+import re
+
 import requests
 import lxml.html
 
@@ -67,7 +69,17 @@ def getCountryArea(countryURL):
     doc = lxml.html.fromstring(r.content)
     area = doc.xpath(
         "(//table[contains(./@class,'infobox')]//tr[contains(.//text(),'Area')]/following-sibling::tr[1]/td//text()[.!='\n'])[1]")
+    strrinArea = area[0]
+    area = re.split("[–/]", strrinArea)[0]
+    """""
+    for c in strrinArea:
+        if c.isdigit() or c ==  ",":
+            result += c
+        else:
+            break
 
+    return result
+"""
     return area
 
 
@@ -146,21 +158,24 @@ def testFunc(url):
 
 
 if __name__ == '__main__':
-    print(len(getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")))
-    print(getCountryDrivingSide("https://en.wikipedia.org/wiki/Russia"))
-    countries = getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")
-    urls = []
-    for country in countries:
-        urls.append(f"{PREFIX}{country}")
-
-    areas = []
-    presidents = []
-    testPresidents = []
-    for url in urls:
-        presidents.append(getCountryDrivingSide(url))
-        # testPresidents.append(testFunc(url))
-
-    print(len([x for x in presidents if not len(x) == 0]))
-    # print(len([x for x in testPresidents if not len(x) == 0]))
-    # print([(presidents[i], testPresidents[i]) for i in range(len(presidents)) if len(presidents[i]) != len(testPresidents[i])])
-    print("temp")
+    # print(len(getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")))
+    # print(getCountryDrivingSide("https://en.wikipedia.org/wiki/Russia"))
+    # countries = getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")
+    # urls = []
+    # for country in countries:
+    #     urls.append(f"{PREFIX}{country}")
+    #
+    # areas = []
+    # presidents = []
+    # testPresidents = []
+    # for url in urls:
+    #     presidents.append(getCountryDrivingSide(url))
+    #     # testPresidents.append(testFunc(url))
+    #
+    # print(len([x for x in presidents if not len(x) == 0]))
+    # # print(len([x for x in testPresidents if not len(x) == 0]))
+    # # print([(presidents[i], testPresidents[i]) for i in range(len(presidents)) if len(presidents[i]) != len(testPresidents[i])])
+    # print("temp")
+    # s = getCountryArea(PREFIX + "/wiki/Israel")
+    # print(s)
+    createOntology()
