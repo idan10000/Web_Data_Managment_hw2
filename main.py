@@ -214,9 +214,19 @@ def createOntology():
 
     g.serialize("ontology.nt", format="nt")
 
+def queryGraphList(q):
+    res = list(g.query(q))
+    print(res)
+    if len(res) == 0:
+        return []
+    output = []
+    for item in res:
+        output.append(str(item[0])[19:].replace("_", " "))
+    return output
 
 def queryGraph(q):
     res = list(g.query(q))
+
     if len(res) == 0:
         return []
     output = []
@@ -232,21 +242,29 @@ def whoIsQuestion(question):
         country = question[24:-1].replace(" ", "_")
         q = "select * where {?a <http://example.org/president_of_country> <http://example.org/" + country + ">}"
         res = queryGraph(q)
-
+        resultString = ""
     elif question.find("prime minister") != -1:
         country = question[29:-1].replace(" ", "_")
         q = "select * where {?a <http://example.org/prime_minister_of_country> <http://example.org/" + country + ">}"
         res = queryGraph(q)
+        resultString = ""
 
     else:
         name = question[7:-1].replace(" ", "_")
         q = "select * where " \
             "{<http://example.org/" + name + "> <http://example.org/president_of_country> ?x}"
         res = queryGraph(q)
+        resultString = "President of "
         if len(res) == 0:
             q = "select * where " \
                 "{<http://example.org/" + name + "> <http://example.org/prime_minister_of_country> ?x}"
             res = queryGraph(q)
+            resultString = "Prime minister of "
+    res = sorted(res)
+    for item in res:
+        resultString += item + ", "
+    return resultString[:-2]
+
 
 
 def whatIsQuestion(question):
@@ -264,40 +282,90 @@ def whatIsQuestion(question):
         subject = "capital_of_country"
     q = "select * where  {?x <http://example.org/" + subject + "> <http://example.org/" + country + ">}"
     res = queryGraph(q)
-
+    res = sorted(res)
+    resultString = ""
+    for item in res:
+        resultString += item + ", "
+    return resultString[:-2]
 
 def whenQuestion(question):
     if question.find("president") != -1:
         country = question[26:-6]
+        country = country.replace(" ","_")
+
         q = "select ?y where {" \
             "?x <http://example.org/president_of_country> <http://example.org/" + country + "> ." \
                                                                                             "?y <http://example.org/birth_day_of_person> ?x}"
         res = queryGraph(q)
-        return res
+        resString = ""
+        for i in range(len(res)):
+            resString += res[i]
+        return resString
     else:
         country = question[31:-6]
+        country = country.replace(" ","_")
+
         q = "select ?y where {" \
             "?x <http://example.org/prime_minister_of_country> <http://example.org/" + country + "> ." \
                                                                                                  "?y <http://example.org/birth_day_of_person> ?x}"
         res = queryGraph(q)
-
+        resString = ""
+        for i in range(len(res)):
+            resString += res[i]
+        return resString
 
 def whereQuestion(question):
     if question.find("president") != -1:
         country = question[27:-6]
+        country = country.replace(" ","_")
         q = "select ?y where {" \
             "?x <http://example.org/president_of_country> <http://example.org/" + country + "> ." \
                                                                                             "?y <http://example.org/birth_place_of_person> ?x}"
         res = queryGraph(q)
-        return res
+        resString = ""
+        for i in range(len(res)):
+            resString += res[i]
+        return resString
     else:
         country = question[32:-6]
+        country = country.replace(" ","_")
         q = "select ?y where {" \
             "?x <http://example.org/prime_minister_of_country> <http://example.org/" + country + "> ." \
                                                                                                  "?y <http://example.org/birth_place_of_person> ?x}"
         res = queryGraph(q)
-        return res
+        resString = ""
+        for i in range(len(res)):
+            resString += res[i]
+        return resString
 
+def howQuestion(question):
+    if question.find("also") != -1:
+        form1, form2 = question.split("are also")
+        form1 = (form1.split("?")[0]).split()
+        form1 = "_".join(form1[2:])
+        form2 = (form2.split("?")[0]).split()
+        form2 = "_".join(form2)
+        q = "select * where {  <" + ontology_Prefix + form1 + "> <http://example.org/government_of_country> ?x. " \
+            + " <" + ontology_Prefix + form2 + "> <http://example.org/government_of_country> ?x. }"
+
+        res = queryGraph(q)
+        return len(res)
+    elif question.find("born") != -1:
+        place = question[33:-1]
+        place = ontology_Prefix + place
+        print(place)
+        q = "select * where { ?e" + " <" + ontology_Prefix + "birth_place_of_person>" + " <" + place + "> . }"
+        res = queryGraph(q)
+        return len(res)
+
+def ListQuestion(question):
+
+    name = (question.split("?")[0]).split(" ")
+    name = "_".join(name[9:])
+    q = "select * where { ?e" + " <" + ontology_Prefix + "capital_of_country> ?x. " + " FILTER(regex(lcase(str(?e))," + "\"" + str(
+        name).lower() + "\"" + "))}"
+    res = queryGraph(q)
+    return res
 
 def questionToSparql(question):
     # who is question
@@ -310,6 +378,10 @@ def questionToSparql(question):
         return whenQuestion(question)
     if question.find("Where") != -1:
         return whereQuestion(question)
+    if question.find("How") != -1:
+        return howQuestion(question)
+    if question.find("List") != -1:
+        return ListQuestion(question)
 
 
 if __name__ == '__main__':
@@ -322,8 +394,7 @@ if __name__ == '__main__':
 
     for country1 in countries:
         countriesNames.append(country1[6:])
-    temp = getPersonBirthPlace("https://en.wikipedia.org/wiki/Salome_Zourabichvili")
-    print(temp)
+
     capitals = []
     populations = []
     testPresidents = []
@@ -337,31 +408,14 @@ if __name__ == '__main__':
         # print(getCountryArea(url))
 
     g.parse("ontology.nt", format="nt")
-    for name in countriesNames:
+    """for name in countriesNames:
         if name.find("Georgia") != -1:
             print("test")
         q = questionToSparql(f"Where was the prime minister of {name} born?")
         if len(q) > 0:
-            print(q[0])
+            print(q[0])"""
+
+    q = questionToSparql("When was the prime minister of United Kingdom born?")
+    print(q)
 
 
-# s = (questionToSparql("What is the population of Israel?"))
-# print(getCountryArea(PREFIX+"/wiki/Austria"))
-
-# print(s)
-"""""
-g = rdflib.Graph()
-g.parse("graph.nt", format="nt")
-query_list_result = g.query(s)
-print(list(query_list_result))
-"""""
-# print(getCountryArea(PREFIX+"/wiki/China"))
-# createOntology()
-#
-# # q = "select ?x where " \
-# #     "{ ?x <http://example.org/prime_minister_of_country>  <http://example.org/India> " \
-# #     "}"
-# # x = g1.query(q)
-# # print(list(x))
-
-# print(q)
