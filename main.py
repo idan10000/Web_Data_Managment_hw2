@@ -156,12 +156,13 @@ def prepareStrToOntology(name):
 
 
 def createOntology():
-    allCountries = getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")
-    for country1 in allCountries:
+    global countries
+    countries = getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")
+    for country1 in countries:
         countriesNames.append(country1[6:])
 
-    for country1 in allCountries:
-        # for country1 in ['/wiki/Israel']:
+    for country1 in countries:
+    # for country1 in ['/wiki/Solomon_Islands']:
         prime_minister, population, capital, area, gov, president, drive = getAlldataByCountry(country1)
         countryOntology = prepareStrToOntology(country1)
         if len(prime_minister) > 0:
@@ -389,10 +390,10 @@ def questionToSparql(question):
         return ListQuestion(question)
 
 
-
-if __name__ == '__main1__':
+if __name__ == '__main__':
     # print(len(getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")))
     # print(getCountryDrivingSide("https://en.wikipedia.org/wiki/Russia"))
+    createOntology()
     countries = getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")
     urls = []
     for country in countries:
@@ -414,13 +415,14 @@ if __name__ == '__main1__':
         # print(getCountryArea(url))
 
     g.parse("ontology.nt", format="nt")
-    """for name in countriesNames:
-        if name.find("Georgia") != -1:
-            print("test")
-        q = questionToSparql(f"Where was the prime minister of {name} born?")
-        if len(q) > 0:
-            print(q[0])"""
+    # for name in countriesNames:
+    #     if name.find("Georgia") != -1:
+    #         print("test")
+    #     q = questionToSparql(f"Where was the prime minister of {name} born?")
+    #     if len(q) > 0:
+    #         print(q[0])
 
-createOntology()
+    q = questionToSparql("When was the prime minister of United Kingdom born?")
+    print(q)
 
 
