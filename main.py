@@ -1,4 +1,5 @@
 import re
+import sys
 
 import requests
 import lxml.html
@@ -162,7 +163,7 @@ def createOntology():
         countriesNames.append(country1[6:])
 
     for country1 in countries:
-    # for country1 in ['/wiki/Solomon_Islands']:
+        # for country1 in ['/wiki/Solomon_Islands']:
         prime_minister, population, capital, area, gov, president, drive = getAlldataByCountry(country1)
         countryOntology = prepareStrToOntology(country1)
         if len(prime_minister) > 0:
@@ -207,9 +208,10 @@ def createOntology():
         areaString = area[0]
         areaAntology = prepareStrToOntology(areaString)
         g.add((areaAntology, area_of_country, countryOntology))
-        driveString = drive[0]
-        driveOntology = prepareStrToOntology(driveString)
-        g.add((driveOntology, driving_side_of_country, countryOntology))
+        if len(drive) > 0:
+            driveString = drive[0]
+            driveOntology = prepareStrToOntology(driveString)
+            g.add((driveOntology, driving_side_of_country, countryOntology))
 
         for capital1 in capital:
             capitalAntology = prepareStrToOntology(capital1)
@@ -220,6 +222,7 @@ def createOntology():
 
     g.serialize("ontology.nt", format="nt")
 
+
 def queryGraphList(q):
     res = list(g.query(q))
     print(res)
@@ -229,6 +232,7 @@ def queryGraphList(q):
     for item in res:
         output.append(str(item[0])[19:].replace("_", " "))
     return output
+
 
 def queryGraph(q):
     res = list(g.query(q))
@@ -272,7 +276,6 @@ def whoIsQuestion(question):
     return resultString[:-2]
 
 
-
 def whatIsQuestion(question):
     if question.find("population of") != -1:
         country = question[26:-1].replace(" ", "_")
@@ -294,10 +297,11 @@ def whatIsQuestion(question):
         resultString += item + ", "
     return resultString[:-2]
 
+
 def whenQuestion(question):
     if question.find("president") != -1:
         country = question[26:-6]
-        country = country.replace(" ","_")
+        country = country.replace(" ", "_")
 
         q = "select ?y where {" \
             "?x <http://example.org/president_of_country> <http://example.org/" + country + "> ." \
@@ -309,7 +313,7 @@ def whenQuestion(question):
         return resString
     else:
         country = question[31:-6]
-        country = country.replace(" ","_")
+        country = country.replace(" ", "_")
 
         q = "select ?y where {" \
             "?x <http://example.org/prime_minister_of_country> <http://example.org/" + country + "> ." \
@@ -320,10 +324,11 @@ def whenQuestion(question):
             resString += res[i]
         return resString
 
+
 def whereQuestion(question):
     if question.find("president") != -1:
         country = question[27:-6]
-        country = country.replace(" ","_")
+        country = country.replace(" ", "_")
         q = "select ?y where {" \
             "?x <http://example.org/president_of_country> <http://example.org/" + country + "> ." \
                                                                                             "?y <http://example.org/birth_place_of_person> ?x}"
@@ -334,7 +339,7 @@ def whereQuestion(question):
         return resString
     else:
         country = question[32:-6]
-        country = country.replace(" ","_")
+        country = country.replace(" ", "_")
         q = "select ?y where {" \
             "?x <http://example.org/prime_minister_of_country> <http://example.org/" + country + "> ." \
                                                                                                  "?y <http://example.org/birth_place_of_person> ?x}"
@@ -343,6 +348,7 @@ def whereQuestion(question):
         for i in range(len(res)):
             resString += res[i]
         return resString
+
 
 def howQuestion(question):
     if question.find("also") != -1:
@@ -360,18 +366,31 @@ def howQuestion(question):
         place = question[33:-1]
         place = ontology_Prefix + place
         print(place)
-        q = "select * where { ?e" + " <" + ontology_Prefix + "birth_place_of_person>" + " <" + place + "> . }"
+        q = "select ?e where { " + place + " <http://example.org/birth_place_of_person> ?e. " \
+                                          "?e <http://example.org/president_of_country> ?z}"
         res = queryGraph(q)
         return len(res)
 
-def ListQuestion(question):
 
+def ListQuestion(question):
     name = (question.split("?")[0]).split(" ")
     name = "_".join(name[9:])
-    q = "select * where { ?e" + " <" + ontology_Prefix + "capital_of_country> ?x. " + " FILTER(regex(lcase(str(?e))," + "\"" + str(
-        name).lower() + "\"" + "))}"
+    q = "select ?x where { ?e <http://example.org/capital_of_country> ?x. FILTER(regex(lcase(str(?e))," + \
+        str(name).lower() + "))}"
     res = queryGraph(q)
     return res
+
+
+def ourQuestion(question):
+    country = question[30:-1].replace(" ", "_")
+    q = "select ?a where {?a <http://example.org/driving_side_of_country> <http://example.org/" + country + ">}"
+    res = queryGraph(q)
+    if res:
+        if res[0][0] == 'l':
+            return "left"
+        return "right"
+    return ""
+
 
 def questionToSparql(question):
     # who is question
@@ -388,41 +407,15 @@ def questionToSparql(question):
         return howQuestion(question)
     if question.find("List") != -1:
         return ListQuestion(question)
+    if question.find("Which") != -1:
+        return ourQuestion(question)
 
 
 if __name__ == '__main__':
-    # print(len(getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")))
-    # print(getCountryDrivingSide("https://en.wikipedia.org/wiki/Russia"))
-    createOntology()
-    countries = getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")
-    urls = []
-    for country in countries:
-        urls.append(f"{PREFIX}{country}")
-
-    for country1 in countries:
-        countriesNames.append(country1[6:])
-
-    capitals = []
-    populations = []
-    testPresidents = []
-    # for url in urls:
-        # capital = getCountryCapital(url)
-        # if len(capital) > 0:
-        #     capital = capital[0].rsplit("/", 1)[1].replace('_', ' ')
-        #     print(capital)
-        # else:
-        #     print([])
-        # print(getCountryArea(url))
-
-    g.parse("ontology.nt", format="nt")
-    # for name in countriesNames:
-    #     if name.find("Georgia") != -1:
-    #         print("test")
-    #     q = questionToSparql(f"Where was the prime minister of {name} born?")
-    #     if len(q) > 0:
-    #         print(q[0])
-
-    q = questionToSparql("When was the prime minister of United Kingdom born?")
-    print(q)
-
-
+    mode = sys.argv[1]
+    if mode == "question":
+        g.parse("ontology.nt", format="nt")
+        question = sys.argv[2]
+        print(questionToSparql(question))
+    else:
+        createOntology()
