@@ -22,6 +22,7 @@ area_of_country = rdflib.URIRef(ontology_Prefix + "area_of_country")
 government_of_country = rdflib.URIRef(ontology_Prefix + "government_of_country")
 birth_day_of_person = rdflib.URIRef(ontology_Prefix + "birth_day_of_person")
 birth_place_of_person = rdflib.URIRef(ontology_Prefix + "birth_place_of_person")
+driving_side_of_country = rdflib.URIRef(ontology_Prefix + "driving_side_of_country")
 
 
 def getAllCountryRefs(url):
@@ -133,7 +134,8 @@ def getAlldataByCountry(country):
     area = getCountryArea(PREFIX + country)
     capital = getCountryCapital(PREFIX + country)
     gov = getCountryGovernment(PREFIX + country)
-    return primeMinister, population, capital, area, gov, president
+    drive = getCountryDrivingSide(PREFIX + country)
+    return primeMinister, population, capital, area, gov, president, drive
 
 
 def prepareStrToOntology(name):
@@ -160,7 +162,7 @@ def createOntology():
 
     for country1 in allCountries:
         # for country1 in ['/wiki/Israel']:
-        prime_minister, population, capital, area, gov, president = getAlldataByCountry(country1)
+        prime_minister, population, capital, area, gov, president, drive = getAlldataByCountry(country1)
         countryOntology = prepareStrToOntology(country1)
         if len(prime_minister) > 0:
             prime_minister_name = prime_minister[0]
@@ -204,6 +206,9 @@ def createOntology():
         areaString = area[0]
         areaAntology = prepareStrToOntology(areaString)
         g.add((areaAntology, area_of_country, countryOntology))
+        driveString = drive[0]
+        driveOntology = prepareStrToOntology(driveString)
+        g.add((driveOntology, driving_side_of_country, countryOntology))
 
         for capital1 in capital:
             capitalAntology = prepareStrToOntology(capital1)
@@ -384,7 +389,8 @@ def questionToSparql(question):
         return ListQuestion(question)
 
 
-if __name__ == '__main__':
+
+if __name__ == '__main1__':
     # print(len(getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")))
     # print(getCountryDrivingSide("https://en.wikipedia.org/wiki/Russia"))
     countries = getAllCountryRefs("https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)")
@@ -415,7 +421,6 @@ if __name__ == '__main__':
         if len(q) > 0:
             print(q[0])"""
 
-    q = questionToSparql("When was the prime minister of United Kingdom born?")
-    print(q)
+createOntology()
 
 
