@@ -307,10 +307,6 @@ def whenQuestion(question):
             "?x <http://example.org/president_of_country> <http://example.org/" + country + "> ." \
                                                                                             "?y <http://example.org/birth_day_of_person> ?x}"
         res = queryGraph(q)
-        resString = ""
-        for i in range(len(res)):
-            resString += res[i]
-        return resString
     else:
         country = question[31:-6]
         country = country.replace(" ", "_")
@@ -319,10 +315,12 @@ def whenQuestion(question):
             "?x <http://example.org/prime_minister_of_country> <http://example.org/" + country + "> ." \
                                                                                                  "?y <http://example.org/birth_day_of_person> ?x}"
         res = queryGraph(q)
-        resString = ""
-        for i in range(len(res)):
-            resString += res[i]
-        return resString
+
+    res.sort()
+    resString = ""
+    for i in range(len(res)):
+        resString += res[i]
+    return resString
 
 
 def whereQuestion(question):
@@ -334,6 +332,7 @@ def whereQuestion(question):
                                                                                             "?y <http://example.org/birth_place_of_person> ?x}"
         res = queryGraph(q)
         resString = ""
+        res.sort()
         for i in range(len(res)):
             resString += res[i]
         return resString
@@ -345,6 +344,7 @@ def whereQuestion(question):
                                                                                                  "?y <http://example.org/birth_place_of_person> ?x}"
         res = queryGraph(q)
         resString = ""
+        res.sort()
         for i in range(len(res)):
             resString += res[i]
         return resString
@@ -364,7 +364,7 @@ def howQuestion(question):
         return len(res)
     elif question.find("born") != -1:
         place = question[33:-1]
-        place = ontology_Prefix + place
+        place = f"<{ontology_Prefix}{place}>"
         print(place)
         q = "select ?e where { " + place + " <http://example.org/birth_place_of_person> ?e. " \
                                           "?e <http://example.org/president_of_country> ?z}"
@@ -375,9 +375,10 @@ def howQuestion(question):
 def ListQuestion(question):
     name = (question.split("?")[0]).split(" ")
     name = "_".join(name[9:])
-    q = "select ?x where { ?e <http://example.org/capital_of_country> ?x. FILTER(regex(lcase(str(?e))," + \
-        str(name).lower() + "))}"
+    q = "select ?x where { ?e <http://example.org/capital_of_country> ?x FILTER(regex(lcase(str(?e)),\"" + \
+        str(name).lower() + "\"))}"
     res = queryGraph(q)
+    res.sort()
     return res
 
 
@@ -407,7 +408,7 @@ def questionToSparql(question):
         return howQuestion(question)
     if question.find("List") != -1:
         return ListQuestion(question)
-    if question.find("Which") != -1:
+    if question.find("which") != -1:
         return ourQuestion(question)
 
 
