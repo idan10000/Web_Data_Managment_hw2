@@ -223,17 +223,6 @@ def createOntology():
     g.serialize("ontology.nt", format="nt")
 
 
-def queryGraphList(q):
-    res = list(g.query(q))
-    print(res)
-    if len(res) == 0:
-        return []
-    output = []
-    for item in res:
-        output.append(str(item[0])[19:].replace("_", " "))
-    return output
-
-
 def queryGraph(q):
     res = list(g.query(q))
 
@@ -365,7 +354,7 @@ def howQuestion(question):
     elif question.find("born") != -1:
         place = question[33:-1]
         place = f"<{ontology_Prefix}{place}>"
-        print(place)
+
         q = "select ?e where { " + place + " <http://example.org/birth_place_of_person> ?e. " \
                                           "?e <http://example.org/president_of_country> ?z}"
         res = queryGraph(q)
@@ -379,7 +368,10 @@ def ListQuestion(question):
         str(name).lower() + "\"))}"
     res = queryGraph(q)
     res.sort()
-    return res
+    resultString = ""
+    for item in res:
+        resultString += item +", "
+    return resultString[:-2]
 
 
 def ourQuestion(question):
