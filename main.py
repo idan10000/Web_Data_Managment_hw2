@@ -241,28 +241,32 @@ def whoIsQuestion(question):
         country = question[24:-1].replace(" ", "_")
         q = "select * where {?a <http://example.org/president_of_country> <http://example.org/" + country + ">}"
         res = queryGraph(q)
-        resultString = ""
+        return str(res)
+    
     elif question.find("prime minister") != -1:
         country = question[29:-1].replace(" ", "_")
         q = "select * where {?a <http://example.org/prime_minister_of_country> <http://example.org/" + country + ">}"
         res = queryGraph(q)
-        resultString = ""
+        return str(res)
 
     else:
         name = question[7:-1].replace(" ", "_")
+        resultString = ""
+
         q = "select * where " \
             "{<http://example.org/" + name + "> <http://example.org/president_of_country> ?x}"
         res = queryGraph(q)
-        resultString = "President of "
-        if len(res) == 0:
-            q = "select * where " \
-                "{<http://example.org/" + name + "> <http://example.org/prime_minister_of_country> ?x}"
-            res = queryGraph(q)
-            resultString = "Prime minister of "
-    res = sorted(res)
-    for item in res:
-        resultString += item + ", "
-    return resultString[:-2]
+        res = sorted(res)
+        for item in res:
+            resultString += "President of " + item + ", "
+
+        q = "select * where " \
+            "{<http://example.org/" + name + "> <http://example.org/prime_minister_of_country> ?x}"
+        res = queryGraph(q)
+        res = sorted(res)
+        for item in res:
+            resultString += "Prime minister of " + item + ", "
+        return resultString[:-2]
 
 
 def whatIsQuestion(question):
